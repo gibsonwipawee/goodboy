@@ -97,12 +97,24 @@ with c2:
         st.session_state.adj_hrs = new_val
         st.warning(f"บันทึกการลด {sub_val} ชม. เรียบร้อย!")
         st.rerun()
-        
+
 # --- (Optional) เพิ่มส่วนแสดง Log ด้านล่างสุด ---
 st.divider()
-st.subheader("📜 ประวัติการปรับปรุง (5 รายการล่าสุด)")
+st.subheader("📜 ประวัติการปรับปรุง (GMT+7)")
+
 log_response = supabase.table("time_track_log").select("*").order("created_at", desc=True).limit(5).execute()
+
 if log_response.data:
     for l in log_response.data:
+        # 1. แปลงสตริงจาก Supabase ให้เป็นวัตถุ datetime
+        # ตัวอย่าง format: 2026-05-05T09:44:45.123456+00:00
+        raw_time = datetime.fromisoformat(l['created_at'].replace('Z', '+00:00'))
+        
+        # 2. ปรับเป็นเวลาไทย (GMT+7)
+        thai_time = raw_time + timedelta(hours=7)
+        
+        # 3. กำหนดสีตามประเภท Action
         color = "green" if l['action_type'] == "add" else "red"
-        st.write(f":{color}[{l['action_type'].upper()}] | {l['amount']} ชม. | เมื่อ: {l['created_at'][:19].replace('T', ' ')}")
+        
+        # 4. แสดงผล
+        st.write(f":{color}[{l['action_type'].upper()}] | {l['amount']} ชม. | เมื่อ: {thai_time.strftime('%d/%m/%Y %H:%M:%S')}")
